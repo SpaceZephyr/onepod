@@ -6,7 +6,10 @@
   "compatibility_date": "2026-05-08",
   "vars": {
     "ONEPOD_CACHE_KEY": "podcasts",
-    "SYNC_BATCH_SIZE": "18"
+    "SYNC_BATCH_SIZE": "18",
+    "NEWS_CACHE_KEY": "news",
+    "NEWS_BASE_TOKEN": "JcmvbVeYNas2d9sIqfmctq3Gnyw",
+    "NEWS_TABLE_ID": "tbllPX4DJwPsW1L9"
   },
   "kv_namespaces": [
     {

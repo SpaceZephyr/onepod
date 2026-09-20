@@ -12,7 +12,8 @@
   "routes": [],
   "vars": {
     "FEISHU_RUNTIME_FETCH": "0",
-    "ONEPOD_CACHE_KEY": "podcasts"
+    "ONEPOD_CACHE_KEY": "podcasts",
+    "NEWS_CACHE_KEY": "news"
   },
   "kv_namespaces": [
     {

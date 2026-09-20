@@ -15,3 +15,16 @@ export interface Podcast {
   ytViews: number | null;
   ytPublished: string | null;
 }
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  time: string;
+  source: string;
+  author: string;
+  category?: string;
+  body: string;
+  url?: string;
+  digest_date?: string;
+  notes?: string;
+}

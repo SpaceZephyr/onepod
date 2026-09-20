@@ -3,6 +3,9 @@ const PARENT_NODE = "TOSJwKzxTiFdiRk0aducHNBFntg";
 const SPACE_ID = "7591325128043121630";
 const DEFAULT_CACHE_KEY = "podcasts";
 const META_KEY = "podcasts:meta";
+const DEFAULT_NEWS_CACHE_KEY = "news";
+const DEFAULT_NEWS_BASE_TOKEN = "JcmvbVeYNas2d9sIqfmctq3Gnyw";
+const DEFAULT_NEWS_TABLE_ID = "tbllPX4DJwPsW1L9";
 const DEFAULT_BATCH_SIZE = 18;
 const FEISHU_MAX_RETRIES = 4;
 
@@ -391,9 +394,215 @@ async function syncPodcasts(env) {
   return meta;
 }
 
+function newsCacheKey(env) {
+  return env.NEWS_CACHE_KEY || DEFAULT_NEWS_CACHE_KEY;
+}
+
+function newsMetaKey(env) {
+  return `${newsCacheKey(env)}:meta`;
+}
+
+function unwrapText(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(unwrapText).filter(Boolean).join("");
+  }
+  if (typeof value === "object") {
+    if (typeof value.text === "string") return value.text;
+    if (typeof value.name === "string") return value.name;
+  }
+  return "";
+}
+
+function unwrapUrl(value) {
+  if (value == null || value === "") return undefined;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || undefined;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const url = unwrapUrl(item);
+      if (url) return url;
+    }
+    return undefined;
+  }
+  if (typeof value === "object") {
+    const link = value.link || value.url || value.text;
+    if (typeof link === "string" && link.trim()) return link.trim();
+  }
+  return undefined;
+}
+
+function unwrapTime(value) {
+  if (value == null || value === "") return "";
+  if (typeof value === "number") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  }
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return unwrapTime(value[0]);
+  if (typeof value === "object") {
+    if (value.value != null) return unwrapTime(value.value);
+    if (value.start != null) return unwrapTime(value.start);
+  }
+  return "";
+}
+
+function deriveAuthor(source) {
+  const text = (source || "").trim();
+  if (!text) return "";
+  const hn = text.match(/^HN\s*[·•]\s*(.+)$/i);
+  if (hn) return hn[1].trim();
+  const parts = text.split(/\s*[·•|｜]\s*/);
+  if (parts.length >= 2) return parts[parts.length - 1].trim();
+  return text;
+}
+
+function recordToNewsItem(record) {
+  const fields = record.fields || {};
+  const source = unwrapText(fields["来源"]).trim();
+  const item = {
+    id:
+      unwrapText(fields.item_id).trim() ||
+      record.record_id ||
+      record.id ||
+      "",
+    title: unwrapText(fields["标题"]).trim(),
+    time: unwrapTime(fields["原文时间"]),
+    source,
+    author: deriveAuthor(source),
+    category: unwrapText(fields["分类"]).trim() || undefined,
+    body: unwrapText(fields["翻译全文"]),
+    url: unwrapUrl(fields["原文链接"]),
+    digest_date: unwrapTime(fields["日报日期"]) || undefined,
+    notes: unwrapText(fields["备注"]).trim() || undefined,
+  };
+
+  if (!item.id || (!item.title && !item.body)) return null;
+  return item;
+}
+
+async function listBitableRecords(token, appToken, tableId) {
+  const records = [];
+  let pageToken = "";
+
+  while (true) {
+    const params = new URLSearchParams({ page_size: "500" });
+    if (pageToken) params.set("page_token", pageToken);
+
+    const result = await fetchFeishuJson(
+      `${BASE_URL}/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+      "List bitable records"
+    );
+
+    records.push(...(result.data?.items || []));
+    if (!result.data?.has_more) break;
+    pageToken = result.data?.page_token || "";
+    if (!pageToken) break;
+  }
+
+  return records;
+}
+
+async function searchBitableRecords(token, appToken, tableId) {
+  const records = [];
+  let pageToken = "";
+
+  while (true) {
+    const body = { page_size: 100 };
+    if (pageToken) body.page_token = pageToken;
+
+    const result = await fetchFeishuJson(
+      `${BASE_URL}/bitable/v1/apps/${appToken}/tables/${tableId}/records/search`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      },
+      "Search bitable records"
+    );
+
+    records.push(...(result.data?.items || []));
+    if (!result.data?.has_more) break;
+    pageToken = result.data?.page_token || "";
+    if (!pageToken) break;
+  }
+
+  return records;
+}
+
+async function fetchBitableRecords(token, appToken, tableId) {
+  try {
+    return await listBitableRecords(token, appToken, tableId);
+  } catch (error) {
+    console.warn(
+      "Bitable list failed, falling back to search:",
+      error instanceof Error ? error.message : error
+    );
+    return searchBitableRecords(token, appToken, tableId);
+  }
+}
+
+async function syncNewsWithToken(env, token) {
+  if (!env.ONEPOD_CACHE) {
+    throw new Error("ONEPOD_CACHE KV binding is missing");
+  }
+
+  const startedAt = Date.now();
+  const appToken = env.NEWS_BASE_TOKEN || DEFAULT_NEWS_BASE_TOKEN;
+  const tableId = env.NEWS_TABLE_ID || DEFAULT_NEWS_TABLE_ID;
+  const cacheKey = newsCacheKey(env);
+  const records = await fetchBitableRecords(token, appToken, tableId);
+  const items = records
+    .map(recordToNewsItem)
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        new Date(b.time || 0).getTime() - new Date(a.time || 0).getTime()
+    );
+
+  const meta = {
+    ok: true,
+    source: "feishu-bitable",
+    count: items.length,
+    totalRecords: records.length,
+    syncedAt: new Date().toISOString(),
+    durationMs: Date.now() - startedAt,
+    cacheKey,
+    tableId,
+  };
+
+  await env.ONEPOD_CACHE.put(cacheKey, JSON.stringify(items));
+  await env.ONEPOD_CACHE.put(newsMetaKey(env), JSON.stringify(meta));
+  return meta;
+}
+
+async function syncNewsOnly(env) {
+  const token = await getTenantToken(env);
+  return syncNewsWithToken(env, token);
+}
+
 async function syncPodcastsOnly(env) {
   const token = await getTenantToken(env);
-  return syncPodcastsWithToken(env, token);
+  const podcasts = await syncPodcastsWithToken(env, token);
+  try {
+    podcasts.news = await syncNewsWithToken(env, token);
+  } catch (error) {
+    podcasts.news = {
+      ok: false,
+      error: error instanceof Error ? error.message : error,
+    };
+  }
+  return podcasts;
 }
 
 async function syncPodcastsWithToken(env, token) {
@@ -466,7 +675,10 @@ const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/sync" && request.method === "POST") {
+    if (
+      (url.pathname === "/sync" || url.pathname === "/sync/news") &&
+      request.method === "POST"
+    ) {
       const expected = env.SYNC_TOKEN;
       const actual = request.headers.get("authorization");
       if (!expected || actual !== `Bearer ${expected}`) {
@@ -474,6 +686,9 @@ const worker = {
       }
 
       try {
+        if (url.pathname === "/sync/news") {
+          return json(await syncNewsOnly(env));
+        }
         return json(await syncPodcastsOnly(env));
       } catch (error) {
         return json(
@@ -483,11 +698,15 @@ const worker = {
       }
     }
 
-    const meta = await env.ONEPOD_CACHE?.get(META_KEY, "json");
+    const [meta, newsMeta] = await Promise.all([
+      env.ONEPOD_CACHE?.get(META_KEY, "json"),
+      env.ONEPOD_CACHE?.get(newsMetaKey(env), "json"),
+    ]);
     return json({
       ok: true,
       worker: "onepod-feishu-sync",
       meta: meta || null,
+      news: newsMeta || null,
     });
   },
 
