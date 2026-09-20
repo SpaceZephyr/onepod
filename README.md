@@ -69,8 +69,8 @@ Worker 使用已有的 `FEISHU_APP_ID` / `FEISHU_APP_SECRET` 换取 tenant token
 
 **飞书开放平台需要额外开通 Base / 多维表格权限**，仅有 Wiki 权限不够：
 
-1. 打开飞书开放平台里的应用，在权限管理中开通 **base / bitable** 只读或读写范围（例如 `bitable:app:readonly`，或「查看、评论和编辑多维表格」）。
-2. 把「OnePod 日报」Base 分享给该应用的机器人（添加为协作者），否则 list/search records 会 403。
+1. 打开飞书开放平台里的应用，在权限管理中开通 **base / bitable** 只读范围（例如 `base:record:read`、`bitable:app:readonly`，或「查看、评论和编辑多维表格」）。仅有 Wiki 权限时记录接口会 403。
+2. 把「OnePod 日报」Base 分享给该应用的机器人（添加为协作者）。
 3. 在 Cloudflare Worker `onepod-feishu-sync` 上确认 secrets / vars：
 
 ```bash
@@ -79,8 +79,10 @@ npx wrangler secret put FEISHU_APP_ID --config wrangler.sync.jsonc
 npx wrangler secret put FEISHU_APP_SECRET --config wrangler.sync.jsonc
 npx wrangler secret put SYNC_TOKEN --config wrangler.sync.jsonc
 
-# vars 已写在 wrangler.sync.jsonc，部署时生效
-# NEWS_BASE_TOKEN / NEWS_TABLE_ID / NEWS_CACHE_KEY=news
+# vars 已写在 wrangler.sync.jsonc，部署时生效：
+# NEWS_BASE_TOKEN=JcmvbVeYNas2d9sIqfmctq3Gnyw
+# NEWS_TABLE_ID=tbllPX4DJwPsW1L9
+# NEWS_CACHE_KEY=news
 ```
 
 主站 Worker 读取同一 KV 的 `news` key；KV 为空时回退到仓库里的 `src/news.json` 种子数据。
