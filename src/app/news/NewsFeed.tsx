@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { NewsItem } from "@/lib/types";
 import NewsMarkdown from "./NewsMarkdown";
 import styles from "./news.module.css";
@@ -37,7 +36,7 @@ function previewText(md: string, max = 180) {
   const plain = md
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-    .replace(/\[[^\]]*\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/^#+\s+/gm, "")
     .replace(/[#>*_`~]/g, "")
     .replace(/\s+/g, " ")
@@ -62,23 +61,13 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
     };
   }, [active]);
 
-  const subtitle = useMemo(
-    () => (items.length ? `${items.length} 条 · 按原文时间倒序` : ""),
-    [items]
-  );
-
   return (
     <div className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.top}>
           <div>
             <h1 className={styles.brand}>OnePod 日报</h1>
-            <p className={styles.tagline}>精选条目</p>
-            <p className={styles.sub}>{subtitle}</p>
           </div>
-          <Link href="/" className={styles.navLink}>
-            Onepod
-          </Link>
         </header>
 
         {items.length === 0 && <div className={styles.state}>暂无条目</div>}
