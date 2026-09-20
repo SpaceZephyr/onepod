@@ -12,7 +12,7 @@ export default function HomeTabs({
       style={{ backgroundColor: "#e9ece8" }}
     >
       <div className="mx-auto max-w-[1680px]">
-        <header className="mb-5 flex flex-col gap-5 px-1 sm:mb-7 md:mb-9 lg:flex-row lg:items-end lg:justify-between">
+        <header className="mb-5 flex items-start justify-between gap-3 px-1 sm:mb-7 md:mb-9">
           <div>
             <h1 className="font-[family-name:var(--font-display)] text-[34px] font-semibold leading-none tracking-normal text-[#20251f] md:text-[48px]">
               Onepod
@@ -22,15 +22,17 @@ export default function HomeTabs({
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:justify-end">
-            <Link
-              href="/sources"
-              className="order-2 w-fit font-[family-name:var(--font-display)] text-[22px] font-semibold leading-none text-[#20251f] no-underline transition hover:text-[#5b6a57] sm:order-none md:text-[28px]"
-            >
-              播客列表
-            </Link>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <nav aria-label="首页导航" className="flex h-[34px] items-center gap-5 md:h-[48px] md:gap-8">
+              <Link href="/news/" className="font-[family-name:var(--font-display)] text-[18px] font-semibold leading-none text-[#20251f] no-underline transition hover:text-[#5b6a57] md:text-[24px]">
+                日报
+              </Link>
+              <Link href="/sources/" className="font-[family-name:var(--font-display)] text-[18px] font-semibold leading-none text-[#20251f] no-underline transition hover:text-[#5b6a57] md:text-[24px]">
+                信源
+              </Link>
+            </nav>
 
-            <div className="hidden text-right text-[12px] uppercase tracking-[0.12em] text-[#7d887c] sm:block">
+            <div className="hidden text-right text-[12px] uppercase tracking-normal text-[#7d887c] sm:block">
               {podcasts.length} episodes
             </div>
           </div>

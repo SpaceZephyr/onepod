@@ -87,19 +87,21 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
                     <span className={styles.channel}>
                       {item.source || "未知来源"}
                     </span>
-                    <span className={styles.dateCode}>{dateCode(item.time)}</span>
-                  </div>
-                  {item.category ? (
-                    <span className={`${styles.catBadge} ${styles.catBadgeInline}`}>
-                      {item.category}
+                    <span className={styles.metaEnd}>
+                      {item.category ? (
+                        <span className={`${styles.catBadge} ${styles.catBadgeInline}`}>
+                          {item.category}
+                        </span>
+                      ) : null}
+                      <span className={styles.dateCode}>{dateCode(item.time)}</span>
                     </span>
-                  ) : null}
-                  <h2 className={styles.title}>{item.title}</h2>
+                  </div>
                   <p className={styles.authorLine}>
                     {item.author && item.author !== item.source
                       ? `${item.author} · ${formatTime(item.time)}`
                       : formatTime(item.time)}
                   </p>
+                  <h2 className={styles.title}>{item.title}</h2>
                   <p className={styles.preview}>{previewText(item.body || "")}</p>
                 </div>
               </article>

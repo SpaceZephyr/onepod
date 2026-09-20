@@ -52,6 +52,10 @@ const PODCAST_DESCRIPTIONS: Record<string, string> = {
   Stratechery: "Ben Thompson 对科技平台、商业模式、AI 和产业结构的策略分析。",
   "Sequoia Capital": "Sequoia 的创业、AI builder 和技术公司访谈，包括 Training Data 系列。",
   "Product Pathways": "面向产品经理和 AI 产品构建者的产品方法、组织和实战讨论。",
+  "How I AI": "Claire Vo 主持的实操型 AI 访谈，聚焦团队如何把 AI 用进真实工作流。",
+  "Big Think": "科学、数学、哲学与认知领域思想家的高密度讲解和访谈。",
+  "Kanał Zero": "Krzysztof Stanowski 主持的波兰语公共议题、文化与人物深度节目。",
+  "The Knowledge Project Podcast": "Shane Parrish 主持的长期主义访谈，关注决策、习惯、思维模型与人生策略。",
 };
 
 const PODCAST_SKILL_CHANNELS = [
@@ -97,6 +101,10 @@ const PODCAST_SKILL_CHANNELS = [
   ["Stratechery", "@Stratechery"],
   ["Sequoia Capital", "channel/UCWrF0oN6unbXrWsTN7RctTw"],
   ["Product Pathways", "channel/UCFHnDTQrRshnLzLUJ3mvGQQ"],
+  ["How I AI", "@howiaipodcast"],
+  ["Big Think", "channel/UCvQECJukTDE2i6aCoMnS-Vg"],
+  ["Kanał Zero", "@KanalZeroPL"],
+  ["The Knowledge Project Podcast", "@tkppodcast"],
 ] as const;
 
 const CHANNEL_NAME_ALIASES: Record<string, string> = {
@@ -105,8 +113,12 @@ const CHANNEL_NAME_ALIASES: Record<string, string> = {
   "All-In Podcast": "The All-In Podcast",
   "All-In with Chamath, Jason, Sacks & Friedberg": "The All-In Podcast",
   "The Twenty Minute VC (20VC): Venture Capital | Startup Funding | The Pitch": "20VC with Harry Stebbings",
+  "The Twenty Minute VC (20VC)": "20VC with Harry Stebbings",
   "20VC with Harry Stebbings": "20VC with Harry Stebbings",
   "Latent Space: The AI Engineer Podcast": "Latent Space",
+  "Lenny's Podcast: Product | Career | Growth": "Lenny's Podcast",
+  "David Perell (How I Write)": "How I Write (David Perell)",
+  "Dwarkesh Podcast": "Dwarkesh Patel",
 };
 
 export function normalizePodcastChannelName(name: string | null | undefined): string {
